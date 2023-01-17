@@ -1,3 +1,5 @@
+from datetime import datetime
+
 class ContaBanco:
     def __init__(self, nome, cpf, agencia, conta):
         self.nome = nome
