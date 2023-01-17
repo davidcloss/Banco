@@ -19,7 +19,7 @@ class ContaBanco:
         self.transacoes_saque(valor)
 
     def transferencia(self, valor_transferencia, conta_destino):
-        self.valor = self.saldo - valor_transferencia
+        self.saldo = self.saldo - valor_transferencia
         conta_destino.saldo += valor_transferencia
         self.transacoes_transferencia_realizada(valor_transferencia)
         self.transacoes_transferencia_recebida(valor_transferencia, conta_destino)
@@ -50,11 +50,17 @@ class ContaBanco:
 
 
 conta_david = ContaBanco('David','02849567852', '1587','0025654')
+print(conta_david.saldo)
 conta_david.deposito(3000)
+print(conta_david.saldo)
 conta_david.saque(500)
+print(conta_david.saldo)
 conta_luan = ContaBanco('Luan', '01459371801', '4598', '0066458')
+print(conta_luan.saldo)
 conta_luan.deposito(1500)
+print(conta_luan.saldo)
 conta_luan.saque(150)
+print(conta_luan.saldo)
 conta_luan.transferencia(50,conta_david)
-print(conta_david.cpf, conta_david.agencia, conta_david.nome, conta_david.conta, conta_david.saldo)
-print(conta_luan.cpf, conta_luan.agencia, conta_luan.nome, conta_luan.conta, conta_luan.saldo)
+print(conta_luan.saldo)
+print(conta_david.saldo)
