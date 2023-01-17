@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class ContaBanco:
     def __init__(self, nome, cpf, agencia, conta):
@@ -24,13 +24,14 @@ class ContaBanco:
 
     def transacoes_saque(self,valor):
         with open(f'transacoes_{self.conta}_{self.agencia}_{self.nome}.txt','a',encoding='utf-8') as arquivo:
-            arquivo.write(f'\nS,-{valor}')
+            arquivo.write(f'\n{self.data()} S,-{valor}')
 
     def transacoes_deposito(self,valor):
         with open(f'transacoes_{self.conta}_{self.agencia}_{self.nome}.txt','a',encoding='utf-8') as arquivo:
-            arquivo.write(f'\nD,+{valor}')
+            arquivo.write(f'\n{self.data()} D,+{valor}')
 
-
+    def data(self):
+        return datetime.now().date()
 
 
 
