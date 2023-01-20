@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 class ContaBanco:
 
     def __init__(self, nome, cpf, agencia, conta):
-        self._cria_relacao_clientes = self._criar_arquivo_relacao_clientes()
         self._nome = nome
         self._cpf = self._cadastro_cpf(cpf)
         self._agencia = agencia
@@ -13,33 +12,33 @@ class ContaBanco:
 
     def deposito(self, valor):
         self._saldo += valor
-        self.transacoes_deposito(valor)
+        self._transacoes_deposito(valor)
 
     def saque(self, valor):
         self._saldo = self._saldo - valor
-        self.transacoes_saque(valor)
+        self._transacoes_saque(valor)
 
     def transferencia(self, valor_transferencia, conta_destino):
         self._saldo = self._saldo - valor_transferencia
         conta_destino._saldo += valor_transferencia
-        self.transacoes_transferencia_realizada(valor_transferencia)
-        self.transacoes_transferencia_recebida(valor_transferencia, conta_destino)
+        self._transacoes_transferencia_realizada(valor_transferencia)
+        self._transacoes_transferencia_recebida(valor_transferencia, conta_destino)
 
     def _transacoes_saque(self,valor):
         with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self.data()},S,-{valor}')
+            arquivo.write(f'\n{self._data()},S,-{valor}')
 
     def _transacoes_deposito(self,valor):
         with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self.data()},D,+{valor}')
+            arquivo.write(f'\n{self._data()},D,+{valor}')
 
     def _transacoes_transferencia_realizada(self, valor):
         with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self.data()},T,-{valor}')
+            arquivo.write(f'\n{self._data()},T,-{valor}')
 
     def _transacoes_transferencia_recebida(self, valor, conta_destino):
         with open(f'transacoes_{conta_destino._conta}_{conta_destino._agencia}_{conta_destino._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self.data()},T,+{valor}')
+            arquivo.write(f'\n{self._data()},T,+{valor}')
 
     def _data(self):
         return datetime.now().date()
@@ -48,9 +47,6 @@ class ContaBanco:
         with open(f'transacoes_{conta}_{agencia}_{nome}.txt','w',encoding='utf-8') as arquivo:
             arquivo.write(f'{conta}|{agencia}|{nome}|{cpf}')
 
-    def _criar_arquivo_relacao_clientes(self):
-        with open(f'relacao_clientes_banco_dinheiro_barato.txt', 'w', encoding='utf-8') as arquivo:
-            pass
 
     def _ajusta_digitos_cpf(self, cpf):
         if len(cpf) < 11:
@@ -89,7 +85,7 @@ class ContaBanco:
     def _cadastro_cpf(self, cpf):
         cpf = self._ajusta_cpf(cpf)
         cad = self._verifica_cadastro_cpf(cpf)
-        return self._fim_cadastro_cpf(cpf, cad)
+        self._fim_cadastro_cpf(cpf, cad)
 
 
 
