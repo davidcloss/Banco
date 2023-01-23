@@ -9,6 +9,8 @@ class ContaBanco:
         self._agencia = agencia
         self._conta = conta
         self._saldo = 0
+        self._credito_especial = 0
+        self._saque_maximo = self._limite_saque()
 
 
     def deposito(self, valor):
@@ -16,33 +18,104 @@ class ContaBanco:
         self._transacoes_deposito(valor)
 
     def saque(self, valor):
-        self._saldo = self._saldo - valor
-        self._transacoes_saque(valor)
+        self._saque_maximo = self._limite_saque()
+        if self._limite_saque_transferencia(valor) == 1:
+            self._saldo = self._saldo - valor
+            self._transacoes_saque(valor)
+        else:
+            print(f'Não é possível realizar esse saque, favor consulte seu saldo')
 
     def transferencia(self, valor_transferencia, conta_destino):
-        self._saldo = self._saldo - valor_transferencia
-        conta_destino._saldo += valor_transferencia
-        self._transacoes_transferencia_realizada(valor_transferencia)
-        self._transacoes_transferencia_recebida(valor_transferencia, conta_destino)
+        self._saque_maximo = self._limite_saque()
+        if self._limite_saque_transferencia(valor_transferencia) == 1:
+            self._saldo = self._saldo - valor_transferencia
+            conta_destino._saldo += valor_transferencia
+            self._transacoes_transferencia_realizada(valor_transferencia)
+            self._transacoes_transferencia_recebida(valor_transferencia, conta_destino)
+        else:
+            print(f'Não é possível realizar essa transferência, favor consulte seu saldo')
+
+    def _tratamento_transacao(self):
+        with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt','r',encoding='utf-8') as arquivo:
+            arquivo = arquivo.readlines()
+            cabecalho = arquivo[0]
+            transacoes = arquivo[1:]
+            conta, agencia, nome_cliente, cpf = cabecalho.split('|')
+            cpf = cpf.replace('\n', '')
+            for i,transacao in enumerate(transacoes):
+                transacao = transacao.replace('\n', '')
+                transacoes[i] = transacao.split(',')
+        return (conta, agencia, nome_cliente, cpf, transacoes)
+
+    def credito_especial(self, credito_especial):
+        self._credito_especial = credito_especial
+
+    def _tratando_datas(self, data):
+        data = datetime.strptime(data, '%d/%m/%Y')
+        return data
+
+    def extrato(self, data_inicial, data_final):
+        data_inicial = self._tratando_datas(data_inicial)
+        data_final = self._tratando_datas(data_final)
+        dados = self._tratamento_transacao()
+        return self._criar_extrato(data_inicial, data_final, dados)
+
+    def _tratamento_transacao(self):
+        with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt', 'r') as arquivo:
+            doc = arquivo.readlines()
+            cabecalho = doc[0]
+            transacoes = doc[1:]
+            conta, agencia, nome_cliente, cpf = cabecalho.split('|')
+            cpf = cpf.replace('\n', '')
+            for i, transacao in enumerate(transacoes):
+                transacao = transacao.replace('\n', '')
+                transacoes[i] = transacao.split(',')
+        return [conta, agencia, nome_cliente, cpf, transacoes]
+
+    def _criar_extrato(self, data_inicial, data_final, dados):
+        with open(f'extrato_{str(data_inicial.date())}_{str(data_final.date())}.txt', 'a', encoding='utf-8') as arquivo:
+            cabecalho = 'Nome: {} \n\nAgência:{}       Conta:{}'.format(dados[2], dados[1], dados[0])
+            transacoes = dados[4:]
+            corta_linha = '-' * 40
+            arquivo.write(f'{cabecalho}\n{corta_linha}\n')
+            for transacao in transacoes:
+                for i, tran in enumerate(transacao):
+                    data, operacao, sinal, valor = tran
+                    data = self._tratando_datas(data)
+                    if data >= data_inicial and data <= data_final:
+                        arquivo.write(f'  {data}  |  {operacao}  |  {sinal}{valor}  \n')
+
+    def _limite_saque(self):
+        return  self._saldo + self._credito_especial
+
+    def _limite_saque_transferencia(self, valor):
+        if valor > self._saque_maximo:
+            return 0
+        else:
+            return 1
 
     def _transacoes_saque(self,valor):
         with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self._data()},S,-{valor}')
+            arquivo.write(f'\n{self._data()},S,-,{valor}')
 
-    def _transacoes_deposito(self,valor):
+    def _formatar_numero_cpf(self, cpf):
+        pass
+
+
+    def _transacoes_deposito(self, valor):
         with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self._data()},D,+{valor}')
+            arquivo.write(f'\n{self._data()},D,+,{valor}')
 
     def _transacoes_transferencia_realizada(self, valor):
         with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self._data()},T,-{valor}')
+            arquivo.write(f'\n{self._data()},T,-,{valor}')
 
     def _transacoes_transferencia_recebida(self, valor, conta_destino):
         with open(f'transacoes_{conta_destino._conta}_{conta_destino._agencia}_{conta_destino._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self._data()},T,+{valor}')
+            arquivo.write(f'\n{self._data()},T,+,{valor}')
 
     def _data(self):
-        return datetime.now().date()
+        return datetime.now().strftime('%d/%m/%Y')
 
     def _criar_transacoes(self, nome, agencia, conta, cpf):
         if self._verifica_cadastro_cpf(self._ajusta_cpf(cpf)) == 1:
@@ -50,7 +123,6 @@ class ContaBanco:
         else:
             with open(f'transacoes_{conta}_{agencia}_{nome}.txt','a',encoding='utf-8') as arquivo:
                 arquivo.write(f'{conta}|{agencia}|{nome}|{cpf}')
-
 
     def _ajusta_digitos_cpf(self, cpf):
         if len(cpf) < 11:
@@ -69,9 +141,9 @@ class ContaBanco:
         return cpf
 
     def _verifica_cadastro_cpf(self, cpf):
-        with open('relacao_clientes_banco_dinheiro_barato.txt', 'a', encoding='utf-8') as arquivo:
+        with open(f'relacao_clientes_banco_dinheiro_barato.txt', 'a', encoding='utf-8') as arquivo:
             pass
-        with open('relacao_clientes_banco_dinheiro_barato.txt', 'r', encoding='utf-8') as arquivo:
+        with open(f'relacao_clientes_banco_dinheiro_barato.txt', 'r', encoding='utf-8') as arquivo:
             docs = arquivo.readlines()
             for i, doc in enumerate(docs):
                 doc = doc.replace('\n', '')
@@ -86,7 +158,7 @@ class ContaBanco:
             return print('CPF já cadastrado, favor entre em contato com a agência')
         else:
             with open(f'relacao_clientes_banco_dinheiro_barato.txt', 'a', encoding='utf-8') as arquivo:
-                arquivo.write(f'{cpf}\n')
+                arquivo.write(f'{cpf}\n') # estudar uma forma de por data e ainda fazer a verificação do CPF
 
     def _cadastro_cpf(self, cpf):
         cpf = self._ajusta_cpf(cpf)
@@ -96,10 +168,14 @@ class ContaBanco:
 
 
 
-
 conta_david = ContaBanco('David','028.496.678-28', '16487','0025654')
 conta_luan = ContaBanco('Luan', '175.930,637-95', '21553', '4816')
-conta_david.deposito(5000)
-conta_luan.deposito(7000)
-conta_luan.transferencia(3000, conta_david)
+conta_david.deposito(15000)
+conta_david.credito_especial(50000)
 conta_david.saque(6000)
+conta_luan.deposito(80000)
+conta_luan.deposito(20000)
+conta_david.transferencia(2000, conta_luan)
+conta_david.saque(500)
+conta_luan.transferencia(6000, conta_david)
+conta_david.extrato('19/01/2023','21/01/2023')
