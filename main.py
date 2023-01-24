@@ -83,6 +83,7 @@ class ContaBanco:
                     data, operacao, sinal, valor = tran
                     data = self._tratando_datas(data)
                     if data >= data_inicial and data <= data_final:
+                        data = data.strftime('%d/%m/%Y')
                         arquivo.write(f'  {data}  |  {operacao}  |  {sinal}{valor}  \n')
 
     def _limite_saque(self):
