@@ -35,6 +35,21 @@ class ContaBanco:
         else:
             print(f'Não é possível realizar essa transferência, favor consulte seu saldo')
 
+    def credito_especial(self, credito_especial):
+        self._credito_especial = credito_especial
+
+
+
+    def extrato(self, data_inicial, data_final):
+        data_inicial = self._tratando_datas(data_inicial)
+        data_final = self._tratando_datas(data_final)
+        dados = self._tratamento_transacao()
+        return self._criar_extrato(data_inicial, data_final, dados)
+
+    def _tratando_datas(self, data):
+        data = datetime.strptime(data, '%d/%m/%Y')
+        return data
+
     def _tratamento_transacao(self):
         with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt','r',encoding='utf-8') as arquivo:
             arquivo = arquivo.readlines()
@@ -46,19 +61,6 @@ class ContaBanco:
                 transacao = transacao.replace('\n', '')
                 transacoes[i] = transacao.split(',')
         return (conta, agencia, nome_cliente, cpf, transacoes)
-
-    def credito_especial(self, credito_especial):
-        self._credito_especial = credito_especial
-
-    def _tratando_datas(self, data):
-        data = datetime.strptime(data, '%d/%m/%Y')
-        return data
-
-    def extrato(self, data_inicial, data_final):
-        data_inicial = self._tratando_datas(data_inicial)
-        data_final = self._tratando_datas(data_final)
-        dados = self._tratamento_transacao()
-        return self._criar_extrato(data_inicial, data_final, dados)
 
     def _tratamento_transacao(self):
         with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt', 'r') as arquivo:
@@ -72,18 +74,52 @@ class ContaBanco:
                 transacoes[i] = transacao.split(',')
         return [conta, agencia, nome_cliente, cpf, transacoes]
 
+    def _saldo_inicial_saldo_final(self, sinal, valor):
+        saldo = 0
+        if sinal == '+':
+            saldo = saldo + int(valor)
+        else:
+            saldo = saldo - int(valor)
+        return saldo
+
+    def _transacoes_extrato(self, transacoes, data_inicial, data_final, arquivo):
+        for transacao in transacoes:
+            for tran in transacao:
+                data, operacao, sinal, valor = tran
+                data = self._tratando_datas(data)
+            if data >= data_inicial and data <= data_final:
+                saldo_final = self._saldo_inicial_saldo_final(sinal, valor)
+                data = data.strftime('%d/%m/%Y')
+                arquivo.write(f'  {data}  |  {operacao}  |  {sinal}{valor}  \n')
+                arquivo.write(f'Salndo Final: {saldo_final}')
+            else:
+                saldo_inicial = self._saldo_inicial_saldo_final(sinal, valor)
+                arquivo.write(f'Saldo Inicial: {saldo_inicial}\n\n\n')
+
+    def _escreve_cabecalho(self, arquivo):
+        cabecalho = 'Nome: {} \n\nAgência:{}       Conta:{}'.format(self._nome ,self._agencia, self._conta)
+        transacoes = arquivo[4:]
+        corta_linha = '-' * 40
+        arquivo.write(f'{cabecalho}\n{corta_linha}\n')
+        return transacoes
+
     def _criar_extrato(self, data_inicial, data_final, dados):
         with open(f'extrato_{str(data_inicial.date())}_{str(data_final.date())}.txt', 'a', encoding='utf-8') as arquivo:
-            cabecalho = 'Nome: {} \n\nAgência:{}       Conta:{}'.format(dados[2], dados[1], dados[0])
-            transacoes = dados[4:]
-            corta_linha = '-' * 40
-            arquivo.write(f'{cabecalho}\n{corta_linha}\n')
-            for transacao in transacoes:
-                for i, tran in enumerate(transacao):
-                    data, operacao, sinal, valor = tran
-                    data = self._tratando_datas(data)
-                    if data >= data_inicial and data <= data_final:
-                        arquivo.write(f'  {data}  |  {operacao}  |  {sinal}{valor}  \n')
+            self._transacoes_extrato(dados, data_inicial, data_final, arquivo)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def _limite_saque(self):
         return  self._saldo + self._credito_especial
@@ -96,7 +132,7 @@ class ContaBanco:
 
     def _transacoes_saque(self,valor):
         with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self._data()},S,-,{valor}')
+            arquivo.write(f'\n{self._data_atual()},S,-,{valor}')
 
     def _formatar_numero_cpf(self, cpf):
         pass
@@ -104,17 +140,17 @@ class ContaBanco:
 
     def _transacoes_deposito(self, valor):
         with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self._data()},D,+,{valor}')
+            arquivo.write(f'\n{self._data_atual()},D,+,{valor}')
 
     def _transacoes_transferencia_realizada(self, valor):
         with open(f'transacoes_{self._conta}_{self._agencia}_{self._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self._data()},T,-,{valor}')
+            arquivo.write(f'\n{self._data_atual()},T,-,{valor}')
 
     def _transacoes_transferencia_recebida(self, valor, conta_destino):
         with open(f'transacoes_{conta_destino._conta}_{conta_destino._agencia}_{conta_destino._nome}.txt', 'a', encoding='utf-8') as arquivo:
-            arquivo.write(f'\n{self._data()},T,+,{valor}')
+            arquivo.write(f'\n{self._data_atual()},T,+,{valor}')
 
-    def _data(self):
+    def _data_atual(self):
         return datetime.now().strftime('%d/%m/%Y')
 
     def _criar_transacoes(self, nome, agencia, conta, cpf):
@@ -172,7 +208,7 @@ conta_david = ContaBanco('David','028.496.678-28', '16487','0025654')
 conta_luan = ContaBanco('Luan', '175.930,637-95', '21553', '4816')
 conta_david.deposito(15000)
 conta_david.credito_especial(50000)
-conta_david.saque(6000)
+conta_david.saque(5000)
 conta_luan.deposito(80000)
 conta_luan.deposito(20000)
 conta_david.transferencia(2000, conta_luan)
