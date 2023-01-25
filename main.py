@@ -78,6 +78,7 @@ class ContaBanco:
             transacoes = dados[4:]
             corta_linha = '-' * 40
             arquivo.write(f'{cabecalho}\n{corta_linha}\n')
+            arquivo.write(f'Saldo Inicial: {self._saldos(_transacoes= transacoes, _data_inicial= data_inicial)}\n')
             for transacao in transacoes:
                 for i, tran in enumerate(transacao):
                     data, operacao, sinal, valor = tran
@@ -85,6 +86,35 @@ class ContaBanco:
                     if data >= data_inicial and data <= data_final:
                         data = data.strftime('%d/%m/%Y')
                         arquivo.write(f'  {data}  |  {operacao}  |  {sinal}{valor}  \n')
+            arquivo.write(f'Saldo final: {self._saldos(_transacoes= transacoes,_data_final= data_final)}\n\n')
+
+    def _saldos(self, _transacoes, _data_inicial='a', _data_final='a'):
+        valores = 0
+        if _data_inicial == 'a':
+            pass
+        elif _data_inicial != 'a':
+            for transacao in _transacoes:
+                for i, tran in enumerate(transacao):
+                    data, operacao, sinal, valor = tran
+                    data = self._tratando_datas(data)
+                    if data < _data_inicial:
+                        if sinal == '+':
+                            valores += int(valor)
+                        else:
+                            valores -= int(valor)
+        elif _data_final == 'a':
+            pass
+        elif _data_final != 'a':
+            for transacao in _transacoes:
+                for i, tran in enumerate(transacao):
+                    data, operacao, sinal, valor = tran
+                    data = self._tratando_datas(data)
+                    if data <= _data_final and data >= _data_inicial:
+                        if sinal == '+':
+                            valores += int(valor)
+                        else:
+                            valores -= int(valor)
+        return valores
 
     def _limite_saque(self):
         return  self._saldo + self._credito_especial
@@ -171,7 +201,7 @@ class ContaBanco:
 
 conta_david = ContaBanco('David','028.496.678-28', '16487','0025654')
 conta_luan = ContaBanco('Luan', '175.930,637-95', '21553', '4816')
-conta_david.deposito(15000)
+conta_david.deposito(10000)
 conta_david.credito_especial(50000)
 conta_david.saque(6000)
 conta_luan.deposito(80000)
